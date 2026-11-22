@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block title %}Attendance Tracker{% endblock %}
+{% block page_title %}Daily Attendance Tracker{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3>Class Attendance Register</h3>
+    </div>
+    <div class="card-body">
+        <!-- Course & Date Selection Form -->
+        <form method="GET" action="{{ url_for('attendance') }}" class="filter-bar" style="margin-bottom: 2rem;">
+            <select name="course_id" class="filter-select" onchange="this.form.submit()">
+                {% for c in courses %}
+                <option value="{{ c.id }}" {% if selected_course_id == c.id %}selected{% endif %}>
+                    {{ c.code }} - {{ c.name }}
+                </option>
+                {% endfor %}
+            </select>
+
+            <input type="date" name="date" class="filter-select" value="{{ selected_date or '' }}" id="attendanceDateInput" onchange="this.form.submit()">
+
+            <button type="submit" class="btn btn-primary">Load Class</button>
+            <button type="button" class="btn btn-secondary" id="btnMarkAllPresent">Quick: Mark All Present</button>
+        </form>
+
+        <!-- Attendance Recording Form -->
+        {% if students %}
+        <form method="POST" action="{{ url_for('save_attendance') }}">
+            <input type="hidden" name="course_id" value="{{ selected_course_id }}">
+            <input type="hidden" name="date" value="{{ selected_date }}" id="hiddenDate">
+
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Student ID</th>
+                            <th>Student Name</th>
+                            <th>Department</th>
+                            <th>Status on {{ selected_date or 'Selected Date' }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in students %}
+                        {% set current_status = attendance_map.get(s.id, 'Present') %}
+                        <tr>
+                            <td><strong>{{ s.roll_no }}</strong></td>
+                            <td>
+                                <a href="{{ url_for('student_detail', student_id=s.id) }}" class="user-name">
+                                    {{ s.first_name }} {{ s.last_name }}
+                                </a>
+                            </td>
+                            <td><span class="badge badge-dept">{{ s.department }}</span></td>
+                            <td>
+                                <div class="att-radio-group">
+                                    <label class="att-radio-label present">
+                                        <input type="radio" name="att_{{ s.id }}" value="Present" {% if current_status == 'Present' %}checked{% endif %}>
+                                        <span style="color:#059669; font-weight:600;">Present</span>
+                                    </label>
+                                    <label class="att-radio-label absent">
+                                        <input type="radio" name="att_{{ s.id }}" value="Absent" {% if current_status == 'Absent' %}checked{% endif %}>
+                                        <span style="color:#dc2626; font-weight:600;">Absent</span>
+                                    </label>
+                                    <label class="att-radio-label late">
+                                        <input type="radio" name="att_{{ s.id }}" value="Late" {% if current_status == 'Late' %}checked{% endif %}>
+                                        <span style="color:#d97706; font-weight:600;">Late</span>
+                                    </label>
+                                    <label class="att-radio-label">
+                                        <input type="radio" name="att_{{ s.id }}" value="Excused" {% if current_status == 'Excused' %}checked{% endif %}>
+                                        <span style="color:#2563eb; font-weight:600;">Excused</span>
+                                    </label>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">
+                <button type="submit" class="btn btn-primary" style="padding: 0.75rem 2rem; font-size: 0.95rem;">
+                    Save Attendance Log
+                </button>
+            </div>
+        </form>
+        {% else %}
+        <div class="empty-state">
+            <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+            <h4>No students enrolled in this course</h4>
+            <p>Enroll students into this course from the <a href="{{ url_for('enrollments') }}">Enrollments page</a> to track their daily attendance.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Set default date to today if none is selected
+    const dateInput = document.getElementById('attendanceDateInput');
+    const hiddenDate = document.getElementById('hiddenDate');
+    if (dateInput && !dateInput.value) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+        if (hiddenDate) hiddenDate.value = today;
+    }
+</script>
+{% endblock %}

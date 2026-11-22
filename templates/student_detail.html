@@ -1,0 +1,347 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ student.first_name }} {{ student.last_name }} - Profile{% endblock %}
+{% block page_title %}Student Profile{% endblock %}
+
+{% block top_actions %}
+<a href="{{ url_for('students') }}" class="btn btn-secondary btn-sm">
+    &larr; Back to Students
+</a>
+<button class="btn btn-primary btn-sm" data-modal-target="#editStudentModal">
+    Edit Profile
+</button>
+{% endblock %}
+
+{% block content %}
+<!-- Student Overview Card -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-body" style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
+        <div class="avatar avatar-lg">{{ student.first_name[0] }}{{ student.last_name[0] }}</div>
+        <div style="flex: 1; min-width: 250px;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                <h2 style="font-size: 1.5rem; font-weight: 700;">{{ student.first_name }} {{ student.last_name }}</h2>
+                <span class="badge badge-dept">{{ student.department }}</span>
+                <span class="badge" style="background:#e0f2fe; color:#0369a1;">Year {{ student.year }}</span>
+            </div>
+            <div style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.35rem; display: flex; gap: 1.5rem; flex-wrap: wrap;">
+                <span><strong>ID:</strong> {{ student.roll_no }}</span>
+                <span><strong>Email:</strong> {{ student.email }}</span>
+                <span><strong>Phone:</strong> {{ student.phone or 'N/A' }}</span>
+                <span><strong>DOB:</strong> {{ student.dob or 'N/A' }}</span>
+            </div>
+            {% if student.address %}
+            <div style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">
+                <strong>Address:</strong> {{ student.address }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Student Statistics -->
+<section class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon indigo">
+            <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+        </div>
+        <div class="stat-info">
+            <h3>{{ enrollments|length }}</h3>
+            <p>Courses Enrolled</p>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon green">
+            <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <div class="stat-info">
+            <h3>{{ gpa }} / 4.0</h3>
+            <p>Cumulative GPA</p>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon amber">
+            <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+        </div>
+        <div class="stat-info">
+            <h3>{{ earned_credits }}</h3>
+            <p>Earned Credits</p>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon cyan">
+            <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        </div>
+        <div class="stat-info">
+            <h3>{{ attendance_pct }}%</h3>
+            <p>Attendance Record</p>
+        </div>
+    </div>
+</section>
+
+<!-- Enrolled Courses & Grades Table -->
+<div class="card">
+    <div class="card-header">
+        <h3>Enrolled Courses & Academic Records</h3>
+        {% if available_courses %}
+        <button class="btn btn-primary btn-sm" data-modal-target="#enrollCourseModal">
+            + Enroll New Course
+        </button>
+        {% endif %}
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Course Code</th>
+                    <th>Course Title</th>
+                    <th>Credits</th>
+                    <th>Semester</th>
+                    <th>Score</th>
+                    <th>Grade</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in enrollments %}
+                <tr>
+                    <td><strong>{{ e.code }}</strong></td>
+                    <td>
+                        {{ e.course_name }}
+                        <div class="user-sub">Instructor: {{ e.instructor or 'Unassigned' }}</div>
+                    </td>
+                    <td>{{ e.credits }} Credits</td>
+                    <td>{{ e.semester }}</td>
+                    <td>
+                        {% if e.score is not none %}
+                            <strong>{{ e.score }}%</strong>
+                        {% else %}
+                            <span class="user-sub">Not Graded</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if e.grade and e.grade != '-' %}
+                            <span class="badge badge-grade-{{ e.grade[0].lower() }}">{{ e.grade }}</span>
+                        {% else %}
+                            <span class="badge" style="background:#f1f5f9; color:#64748b;">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge badge-status-{{ e.status.lower() }}">{{ e.status }}</span>
+                    </td>
+                    <td style="text-align: right;">
+                        <button class="btn btn-secondary btn-sm" 
+                                onclick="openUpdateScoreModal('{{ e.id }}', '{{ e.score if e.score is not none else '' }}', '{{ e.status }}', '{{ student.first_name }} {{ student.last_name }}', '{{ e.code }}', 'student_detail', '{{ student.id }}')">
+                            Update Grade
+                        </button>
+                        <form method="POST" action="{{ url_for('delete_enrollment', enrollment_id=e.id) }}" onsubmit="return confirm('Remove student from this course?');" style="display:inline;">
+                            <input type="hidden" name="redirect_target" value="student_detail">
+                            <input type="hidden" name="student_id" value="{{ student.id }}">
+                            <button type="submit" class="btn btn-danger btn-sm" title="Drop course">&times;</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="empty-state">This student is not enrolled in any course yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Attendance Record Table -->
+<div class="card">
+    <div class="card-header">
+        <h3>Recent Attendance Log</h3>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Course</th>
+                    <th>Attendance Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for att in attendance_records %}
+                <tr>
+                    <td>{{ att.date }}</td>
+                    <td><strong>{{ att.course_code }}</strong> - {{ att.course_name }}</td>
+                    <td>
+                        {% if att.status == 'Present' %}
+                            <span class="badge badge-status-completed">Present</span>
+                        {% elif att.status == 'Late' %}
+                            <span class="badge badge-grade-c">Late</span>
+                        {% elif att.status == 'Absent' %}
+                            <span class="badge badge-status-dropped">Absent</span>
+                        {% else %}
+                            <span class="badge">{{ att.status }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3" class="empty-state">No attendance records found for this student.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block modals %}
+<!-- Edit Student Profile Modal -->
+<div class="modal-overlay" id="editStudentModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Edit Student Profile</h3>
+            <button class="modal-close" data-modal-close>&times;</button>
+        </div>
+        <form method="POST" action="{{ url_for('update_student', student_id=student.id) }}">
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Roll Number</label>
+                        <input type="text" class="form-control" value="{{ student.roll_no }}" disabled style="background:#f1f5f9;">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dept_edit">Department *</label>
+                        <input type="text" id="dept_edit" name="department" class="form-control" value="{{ student.department }}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fn_edit">First Name *</label>
+                        <input type="text" id="fn_edit" name="first_name" class="form-control" value="{{ student.first_name }}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ln_edit">Last Name *</label>
+                        <input type="text" id="ln_edit" name="last_name" class="form-control" value="{{ student.last_name }}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="em_edit">Email *</label>
+                        <input type="email" id="em_edit" name="email" class="form-control" value="{{ student.email }}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ph_edit">Phone</label>
+                        <input type="text" id="ph_edit" name="phone" class="form-control" value="{{ student.phone or '' }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="yr_edit">Year</label>
+                        <select id="yr_edit" name="year" class="form-control">
+                            <option value="1" {% if student.year == 1 %}selected{% endif %}>Year 1</option>
+                            <option value="2" {% if student.year == 2 %}selected{% endif %}>Year 2</option>
+                            <option value="3" {% if student.year == 3 %}selected{% endif %}>Year 3</option>
+                            <option value="4" {% if student.year == 4 %}selected{% endif %}>Year 4</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="gen_edit">Gender</label>
+                        <select id="gen_edit" name="gender" class="form-control">
+                            <option value="Female" {% if student.gender == 'Female' %}selected{% endif %}>Female</option>
+                            <option value="Male" {% if student.gender == 'Male' %}selected{% endif %}>Male</option>
+                            <option value="Other" {% if student.gender == 'Other' %}selected{% endif %}>Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dob_edit">Date of Birth</label>
+                        <input type="date" id="dob_edit" name="dob" class="form-control" value="{{ student.dob or '' }}">
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="addr_edit">Address</label>
+                        <textarea id="addr_edit" name="address" class="form-control">{{ student.address or '' }}</textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Enroll in New Course Modal -->
+<div class="modal-overlay" id="enrollCourseModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Enroll {{ student.first_name }} in Course</h3>
+            <button class="modal-close" data-modal-close>&times;</button>
+        </div>
+        <form method="POST" action="{{ url_for('create_enrollment') }}">
+            <input type="hidden" name="student_id" value="{{ student.id }}">
+            <input type="hidden" name="redirect_target" value="student_detail">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="course_select">Select Course *</label>
+                    <select id="course_select" name="course_id" class="form-control" required>
+                        <option value="">-- Choose Course --</option>
+                        {% for c in available_courses %}
+                        <option value="{{ c.id }}">{{ c.code }} - {{ c.name }} ({{ c.credits }} credits)</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="enroll_semester">Semester</label>
+                    <input type="text" id="enroll_semester" name="semester" class="form-control" value="Fall 2026" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+                <button type="submit" class="btn btn-primary">Enroll Course</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Update Grade Modal -->
+<div class="modal-overlay" id="updateScoreModal">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header">
+            <h3 id="score_modal_title">Update Grade</h3>
+            <button class="modal-close" data-modal-close>&times;</button>
+        </div>
+        <form method="POST" action="">
+            <input type="hidden" name="redirect_target" id="score_redirect_target" value="student_detail">
+            <input type="hidden" name="student_id" id="score_student_id" value="{{ student.id }}">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="score_input">Numerical Score (0 - 100)</label>
+                    <input type="number" step="0.1" min="0" max="100" id="score_input" name="score" 
+                           class="form-control score-calc-input" data-preview-id="score_preview" placeholder="e.g. 88.5">
+                    <div style="margin-top: 0.35rem; font-size: 0.8rem; color: var(--text-muted);">
+                        Calculated Grade: <strong id="score_preview" style="color: var(--primary);">-</strong>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="status_select">Status</label>
+                    <select id="status_select" name="status" class="form-control">
+                        <option value="Enrolled">Enrolled</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Dropped">Dropped</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Grade</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

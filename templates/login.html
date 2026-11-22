@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | R. C. Patel IMRD Student Management System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .login-page {
+            min-height: 100vh;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+            padding: 1.5rem;
+        }
+
+        .login-card {
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+            width: 100%;
+            max-width: 440px;
+            overflow: hidden;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .login-header {
+            background: linear-gradient(135deg, var(--primary), #6366f1);
+            color: #ffffff;
+            padding: 2.25rem 2rem 1.75rem;
+            text-align: center;
+        }
+
+        .login-logo {
+            width: 56px;
+            height: 56px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin: 0 auto 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .login-header h2 {
+            font-size: 1.45rem;
+            font-weight: 700;
+            margin-bottom: 0.35rem;
+            letter-spacing: -0.5px;
+        }
+
+        .login-header p {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        .login-tabs {
+            display: flex;
+            background: #f1f5f9;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .login-tab-btn {
+            flex: 1;
+            padding: 0.85rem 1rem;
+            background: none;
+            border: none;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .login-tab-btn.active {
+            background: #ffffff;
+            color: var(--primary);
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .login-tab-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .login-body {
+            padding: 2rem;
+        }
+
+    </style>
+</head>
+<body class="login-page">
+    <div class="login-card">
+        <div class="login-header">
+            <div class="login-logo">🎓</div>
+            <h2>R. C. Patel IMRD</h2>
+            <p>Student Management & Academic Portal</p>
+        </div>
+
+        <!-- Role Selector Tabs -->
+        <div class="login-tabs">
+            <button type="button" class="login-tab-btn active" id="tabAdmin" onclick="selectRole('admin')">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                Administrator Login
+            </button>
+            <button type="button" class="login-tab-btn" id="tabStudent" onclick="selectRole('student')">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                Student / User Login
+            </button>
+        </div>
+
+        <div class="login-body">
+            <!-- Flash messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div style="margin-bottom: 1.25rem;">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}" style="margin-bottom: 0.5rem; font-size: 0.85rem; padding: 0.65rem 0.9rem;">
+                                <span>{{ message }}</span>
+                                <button class="close-btn" onclick="this.parentElement.remove()">&times;</button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('login') }}" id="loginForm">
+                <input type="hidden" name="role" id="loginRoleInput" value="admin">
+                <input type="hidden" name="next" value="{{ next_url or '' }}">
+
+                <div class="form-group">
+                    <label for="usernameInput" id="usernameLabel">Admin Username or Email</label>
+                    <input type="text" id="usernameInput" name="username" class="form-control" placeholder="Enter username or email" required autofocus>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label for="passwordInput">Password</label>
+                    <input type="password" id="passwordInput" name="password" class="form-control" placeholder="Enter password" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.75rem; font-size: 0.95rem;">
+                    Sign In to Portal &rarr;
+                </button>
+            </form>
+
+        </div>
+    </div>
+
+    <script>
+        function selectRole(role) {
+            const roleInput = document.getElementById('loginRoleInput');
+            const tabAdmin = document.getElementById('tabAdmin');
+            const tabStudent = document.getElementById('tabStudent');
+            const usernameLabel = document.getElementById('usernameLabel');
+            const usernameInput = document.getElementById('usernameInput');
+
+            roleInput.value = role;
+
+            if (role === 'admin') {
+                tabAdmin.classList.add('active');
+                tabStudent.classList.remove('active');
+                usernameLabel.textContent = 'Admin Username or Email';
+                usernameInput.placeholder = 'e.g. admin';
+            } else {
+                tabStudent.classList.add('active');
+                tabAdmin.classList.remove('active');
+                usernameLabel.textContent = 'Student Roll No / Username / Email';
+                usernameInput.placeholder = 'e.g. MCA-2026-001 or student';
+            }
+        }
+
+    </script>
+</body>
+</html>

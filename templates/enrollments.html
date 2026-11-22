@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+
+{% block title %}Enrollments & Grades{% endblock %}
+{% block page_title %}Enrollment & Grade Management{% endblock %}
+
+{% block top_actions %}
+<button class="btn btn-primary btn-sm" data-modal-target="#newEnrollmentModal">
+    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+    New Enrollment
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <!-- Filter Bar -->
+        <form method="GET" action="{{ url_for('enrollments') }}" class="filter-bar">
+            <select name="course_id" class="filter-select">
+                <option value="">All Courses</option>
+                {% for c in courses %}
+                <option value="{{ c.id }}" {% if selected_course == c.id|string %}selected{% endif %}>
+                    {{ c.code }} - {{ c.name }}
+                </option>
+                {% endfor %}
+            </select>
+
+            <select name="student_id" class="filter-select">
+                <option value="">All Students</option>
+                {% for s in students %}
+                <option value="{{ s.id }}" {% if selected_student == s.id|string %}selected{% endif %}>
+                    {{ s.roll_no }} - {{ s.first_name }} {{ s.last_name }}
+                </option>
+                {% endfor %}
+            </select>
+
+            <button type="submit" class="btn btn-primary">Filter</button>
+            {% if selected_course or selected_student %}
+                <a href="{{ url_for('enrollments') }}" class="btn btn-secondary">Clear</a>
+            {% endif %}
+        </form>
+
+        <!-- Enrollments Table -->
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Course</th>
+                        <th>Semester</th>
+                        <th>Score</th>
+                        <th>Grade</th>
+                        <th>Status</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for e in enrollments %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('student_detail', student_id=e.student_id) }}" class="user-name">
+                                {{ e.first_name }} {{ e.last_name }}
+                            </a>
+                            <div class="user-sub">{{ e.roll_no }} &bull; {{ e.student_dept }}</div>
+                        </td>
+                        <td>
+                            <strong>{{ e.course_code }}</strong>
+                            <div class="user-sub">{{ e.course_name }} ({{ e.credits }} Cr)</div>
+                        </td>
+                        <td>{{ e.semester }}</td>
+                        <td>
+                            {% if e.score is not none %}
+                                <strong>{{ e.score }}%</strong>
+                            {% else %}
+                                <span class="user-sub">Ungraded</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if e.grade and e.grade != '-' %}
+                                <span class="badge badge-grade-{{ e.grade[0].lower() }}">{{ e.grade }}</span>
+                            {% else %}
+                                <span class="badge" style="background:#f1f5f9; color:#64748b;">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge badge-status-{{ e.status.lower() }}">{{ e.status }}</span>
+                        </td>
+                        <td style="text-align: right;">
+                            <div style="display: inline-flex; gap: 0.4rem;">
+                                <button class="btn btn-secondary btn-sm"
+                                        onclick="openUpdateScoreModal('{{ e.id }}', '{{ e.score if e.score is not none else '' }}', '{{ e.status }}', '{{ e.first_name }} {{ e.last_name }}', '{{ e.course_code }}', 'enrollments')">
+                                    Grade
+                                </button>
+                                <form method="POST" action="{{ url_for('delete_enrollment', enrollment_id=e.id) }}" onsubmit="return confirm('Remove this enrollment?');" style="display:inline;">
+                                    <input type="hidden" name="redirect_target" value="enrollments">
+                                    <button type="submit" class="btn btn-danger btn-sm" title="Remove enrollment">&times;</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                                <h4>No enrollments found</h4>
+                                <p>Enroll students into courses to record academic scores and performance.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block modals %}
+<!-- New Enrollment Modal -->
+<div class="modal-overlay" id="newEnrollmentModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Enroll Student in Course</h3>
+            <button class="modal-close" data-modal-close>&times;</button>
+        </div>
+        <form method="POST" action="{{ url_for('create_enrollment') }}">
+            <input type="hidden" name="redirect_target" value="enrollments">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="enroll_student">Select Student *</label>
+                    <select id="enroll_student" name="student_id" class="form-control" required>
+                        <option value="">-- Choose Student --</option>
+                        {% for s in students %}
+                        <option value="{{ s.id }}">{{ s.roll_no }} - {{ s.first_name }} {{ s.last_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="enroll_course">Select Course *</label>
+                    <select id="enroll_course" name="course_id" class="form-control" required>
+                        <option value="">-- Choose Course --</option>
+                        {% for c in courses %}
+                        <option value="{{ c.id }}">{{ c.code }} - {{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="enroll_semester_field">Semester</label>
+                    <input type="text" id="enroll_semester_field" name="semester" class="form-control" value="Fall 2026" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Enrollment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Update Grade Modal -->
+<div class="modal-overlay" id="updateScoreModal">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header">
+            <h3 id="score_modal_title">Update Grade</h3>
+            <button class="modal-close" data-modal-close>&times;</button>
+        </div>
+        <form method="POST" action="">
+            <input type="hidden" name="redirect_target" id="score_redirect_target" value="enrollments">
+            <input type="hidden" name="student_id" id="score_student_id" value="">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="score_input">Score (0 to 100)</label>
+                    <input type="number" step="0.1" min="0" max="100" id="score_input" name="score" 
+                           class="form-control score-calc-input" data-preview-id="score_preview" placeholder="e.g. 85.0">
+                    <div style="margin-top: 0.35rem; font-size: 0.8rem; color: var(--text-muted);">
+                        Calculated Grade: <strong id="score_preview" style="color: var(--primary);">-</strong>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="status_select">Enrollment Status</label>
+                    <select id="status_select" name="status" class="form-control">
+                        <option value="Enrolled">Enrolled</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Dropped">Dropped</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Grade</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
