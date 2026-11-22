@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # R. C. Patel IMRD — Student Management System (SMS)
 
 A full-stack academic management system built with **Python**, **Flask**, **SQLite**, and modern web technologies for **R. C. Patel Educational Trust's Institute of Management, Research & Development, Shirpur**.
@@ -122,3 +123,6 @@ http://127.0.0.1:5000
 ```powershell
 python test_app.py
 ```
+=======
+# Student-Management-System
+>>>>>>> 8ce9d2459c0683a235286f815870c150b226ef89
